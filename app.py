@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Estilização CSS customizada para visual de Terminal Financeiro
+# Estilização CSS customizada
 st.markdown("""
 <style>
     .metric-card {
@@ -51,14 +51,24 @@ col_input, col_btn = st.columns([3, 1])
 with col_input:
     ticker = st.text_input("Ticker da Ação:", placeholder="Ex: BBAS3").upper()
 with col_btn:
-    st.write(" ") # Espaçamento vertical
+    st.write(" ")
     st.write(" ")
     btn_analisar = st.button("🚀 Gerar Dashboard", type="primary", use_container_width=True)
 
-# Prompt otimizado para gerar o Relatório + JSON de Métricas para o Dashboard
-PROMPT_DASHBOARD = """
+if btn_analisar:
+    if not api_key:
+        st.error("⚠️ Por favor, insira sua API Key na barra lateral à esquerda.")
+    elif not ticker:
+        st.warning("⚠️ Por favor, informe o ticker do ativo.")
+    else:
+        try:
+            with st.spinner(f"🔍 Coletando dados fundamentalistas e calculando valuation para {ticker}..."):
+                client = genai.Client(api_key=api_key)
+                
+                # Prompt formatado com f-string limpa
+                prompt_final = f"""
 Atue como um analista CNPI, gestor de fundos e especialista em valuation na B3.
-Analise profundamente a ação: {TICKER}.
+Analise profundamente a ação: {ticker}.
 
 No final do relatório, inclua OBRIGATORIAMENTE um bloco de código JSON isolado contendo exatamente esta estrutura para alimentarmos o dashboard gráfico:
 
