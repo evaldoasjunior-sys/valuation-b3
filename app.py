@@ -20,11 +20,10 @@ st.caption("Automação Fundamentalista de Longo Prazo via Inteligência Artific
 with st.sidebar:
     st.header("⚙️ Configurações")
     
-    # Busca a chave salva nos Secrets do Streamlit Cloud em primeiro lugar
     api_key_secret = st.secrets.get("GEMINI_API_KEY", "")
     
     if api_key_secret:
-        st.success("🔑 API Key detectada automaticamente via Secrets!")
+        st.success("🔑 API Key detectada automaticamente!")
         api_key = api_key_secret
     else:
         api_key = st.text_input("Insira sua API Key do Google AI Studio:", type="password")
@@ -87,7 +86,6 @@ if btn_analisar:
                     "# 15. Conclusão"
                 )
                 
-                # Sistema de fallback para contornar picos de uso
                 modelos_disponiveis = ["gemini-3.6-flash", "gemini-2.5-flash", "gemini-1.5-flash"]
                 response = None
                 
@@ -109,7 +107,6 @@ if btn_analisar:
 
                 txt_resposta = response.text
                 
-                # Extração das métricas em JSON
                 json_match = re.search(r'```json\s*(\{.*?\})\s*```', txt_resposta, re.DOTALL)
                 
                 if json_match:
@@ -117,7 +114,7 @@ if btn_analisar:
                     
                     st.subheader(f"📌 Painel do Ativo: {ticker}")
                     
-                    # CARDS DE MÉTRICAS
+                    # 1. CARDS DE MÉTRICAS
                     c1, c2, c3, c4, c5 = st.columns(5)
                     c1.metric("Recomendação", dados_json.get("recomendacao", "N/A"))
                     c2.metric("Preço Justo Estimado", f"R$ {dados_json.get('preco_justo', 0):.2f}")
@@ -127,7 +124,7 @@ if btn_analisar:
                     
                     st.divider()
 
-                    # GRÁFICO DE RADAR
+                    # 2. GRÁFICO DE RADAR & TABELA FORMATADA
                     col_grafico, col_resumo = st.columns([1, 1])
                     
                     with col_grafico:
@@ -148,13 +145,35 @@ if btn_analisar:
                         
                     with col_resumo:
                         st.markdown("### 📋 Resumo das Notas")
-                        df_tabela = pd.DataFrame([dados_json]).T
-                        df_tabela.columns = ["Valor"]
-                        st.dataframe(df_tabela, use_container_width=True)
+                        
+                       mapeamento_nomes = {
+                            "nota_final": "**Nota Final**",
+                            "qualidade": "**Qualidade**",
+                            "valuation": "**Valuation**",
+                            "dividendos": "**Dividendos**",
+                            "crescimento": "**Crescimento**",
+                            "risco": "**Risco**",
+                            "preco_justo": "**Preço Justo**",
+                            "potencial_alta_pct": "**Potencial de Alta**",
+                            "recomendacao": "**Recomendação**"
+                        }
+
+                        dados_formatados = {}
+                        for chave, valor in dados_json.items():
+                            nome_amigavel = mapeamento_nomes.get(chave, chave)
+                            if chave == "preco_justo" and isinstance(valor, (int, float)):
+                                dados_formatados[nome_amigavel] = f"R$ {valor:.2f}"
+                            elif chave == "potencial_alta_pct" and isinstance(valor, (int, float)):
+                                dados_formatados[nome_amigavel] = f"{valor:.1f}%"
+                            else:
+                                dados_formatados[nome_amigavel] = valor
+
+                        df_tabela = pd.DataFrame(list(dados_formatados.items()), columns=["Indicador", "Valor"])
+                        st.dataframe(df_tabela, use_container_width=True, hide_index=True)
 
                     st.divider()
 
-                # RELATÓRIO COMPLETO
+                # 3. RELATÓRIO COMPLETO
                 st.subheader("📑 Relatório CNPI Detalhado")
                 txt_limpo = re.sub(r'```json\s*(\{.*?\})\s*```', '', txt_resposta, flags=re.DOTALL)
                 st.markdown(txt_limpo)
