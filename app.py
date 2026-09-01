@@ -13,6 +13,20 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Estilização CSS personalizada para tabelas e negrito
+st.markdown("""
+<style>
+    /* Cabeçalho das tabelas em negrito */
+    div[data-testid="stDataFrame"] table thead th {
+        font-weight: bold !important;
+    }
+    /* Primeira coluna (Indicador) das tabelas em negrito */
+    div[data-testid="stDataFrame"] table tbody td:nth-child(1) {
+        font-weight: bold !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 st.title("📊 Terminal de Valuation & Análise CNPI (B3)")
 st.caption("Automação Fundamentalista de Longo Prazo via Inteligência Artificial")
 
@@ -125,7 +139,7 @@ if btn_analisar:
                     '  "risco": 3.0,\n'
                     '  "preco_justo": 36.00,\n'
                     '  "potencial_alta_pct": 33.3,\n'
-                    '  "recomendacao": "COMPRA"\n'
+                    '  "recomendacao": "COMPRA FORTE"\n'
                     "}\n"
                     "```\n"
                 )
@@ -151,77 +165,4 @@ if btn_analisar:
 
                 txt_resposta = response.text
                 
-                json_match = re.search(r'```json\s*(\{.*?\})\s*```', txt_resposta, re.DOTALL)
-                
-                if json_match:
-                    dados_json = json.loads(json_match.group(1))
-                    
-                    st.subheader(f"📌 Painel do Ativo: {ticker}")
-                    
-                    # 1. CARDS DE MÉTRICAS
-                    c1, c2, c3, c4, c5 = st.columns(5)
-                    c1.metric("Recomendação", dados_json.get("recomendacao", "N/A"))
-                    c2.metric("Preço Justo Estimado", f"R$ {dados_json.get('preco_justo', 0):.2f}")
-                    c3.metric("Potencial de Alta", f"+{dados_json.get('potencial_alta_pct', 0)}%")
-                    c4.metric("Nota Final Score", f"{dados_json.get('nota_final', 0)} / 10")
-                    c5.metric("Qualidade Geral", f"{dados_json.get('qualidade', 0)} / 10")
-                    
-                    st.divider()
-
-                    # 2. GRÁFICO DE RADAR & TABELA FORMATADA EM NEGRITO
-                    col_grafico, col_resumo = st.columns([1, 1])
-                    
-                    with col_grafico:
-                        st.markdown("### 🕸️ Perfil Fundamentalista (Score 0 a 10)")
-                        df_radar = pd.DataFrame({
-                            'Métrica': ['Qualidade', 'Valuation', 'Dividendos', 'Crescimento', 'Risco (Inverso)'],
-                            'Nota': [
-                                dados_json.get('qualidade', 0),
-                                dados_json.get('valuation', 0),
-                                dados_json.get('dividendos', 0),
-                                dados_json.get('crescimento', 0),
-                                10 - dados_json.get('risco', 0)
-                            ]
-                        })
-                        fig = px.line_polar(df_radar, r='Nota', theta='Métrica', line_close=True, range_r=[0, 10])
-                        fig.update_traces(fill='toself', fillcolor='rgba(0, 230, 118, 0.2)', line_color='#00E676')
-                        st.plotly_chart(fig, use_container_width=True)
-                        
-                    with col_resumo:
-                        st.markdown("### 📋 Resumo das Notas")
-                        
-                        mapeamento_nomes = {
-                            "nota_final": "**Nota Final**",
-                            "qualidade": "**Qualidade**",
-                            "valuation": "**Valuation**",
-                            "dividendos": "**Dividendos**",
-                            "crescimento": "**Crescimento**",
-                            "risco": "**Risco**",
-                            "preco_justo": "**Preço Justo**",
-                            "potencial_alta_pct": "**Potencial de Alta**",
-                            "recomendacao": "**Recomendação**"
-                        }
-
-                        dados_formatados = {}
-                        for chave, valor in dados_json.items():
-                            nome_amigavel = mapeamento_nomes.get(chave, f"**{chave}**")
-                            if chave == "preco_justo" and isinstance(valor, (int, float)):
-                                dados_formatados[nome_amigavel] = f"**R$ {valor:.2f}**"
-                            elif chave == "potencial_alta_pct" and isinstance(valor, (int, float)):
-                                dados_formatados[nome_amigavel] = f"**{valor:.1f}%**"
-                            else:
-                                dados_formatados[nome_amigavel] = f"**{valor}**"
-
-                        df_tabela = pd.DataFrame(list(dados_formatados.items()), columns=["Indicador", "Valor"])
-                        st.dataframe(df_tabela, use_container_width=True, hide_index=True)
-
-                    st.divider()
-
-                # 3. RELATÓRIO COMPLETO
-                st.subheader("📑 Relatório CNPI Detalhado")
-                padrao_json = r"```json\s*(\{.*?\})\s*```"
-                txt_limpo = re.sub(padrao_json, "", txt_resposta, flags=re.DOTALL)
-                st.markdown(txt_limpo)
-
-        except Exception as e:
-            st.error(f"Erro ao processar o dashboard: {e}")
+                json_match = re.search(r'```json\s*(\{.*?\})\s*
