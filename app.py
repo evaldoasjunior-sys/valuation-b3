@@ -66,7 +66,7 @@ if st.button("Gerar Análise Completa", type="primary"):
                 # Executa a geração do relatório com o modelo atualizado gemini-2.5-flash
                 prompt_final = PROMPT_BASE.format(TICKER=ticker)
                 response = client.models.generate_content(
-                    model="gemini-2.5-flash",
+                    model="gemini-1.5-flash",
                     contents=prompt_final,
                 )
                 
