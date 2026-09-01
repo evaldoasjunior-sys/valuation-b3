@@ -219,4 +219,9 @@ if btn_analisar:
 
                 # 3. RELATÓRIO COMPLETO
                 st.subheader("📑 Relatório CNPI Detalhado")
-                txt_limpo = re.sub(r'```json\s*(\{.*?\})\s*
+                padrao_json = r"```json\s*(\{.*?\})\s*```"
+                txt_limpo = re.sub(padrao_json, "", txt_resposta, flags=re.DOTALL)
+                st.markdown(txt_limpo)
+
+        except Exception as e:
+            st.error(f"Erro ao processar o dashboard: {e}")
