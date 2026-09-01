@@ -43,7 +43,6 @@ if btn_analisar:
             with st.spinner(f"🔍 Coletando dados fundamentalistas e calculando valuation para {ticker}..."):
                 client = genai.Client(api_key=api_key)
                 
-                # Prompt construído sem f-string para evitar conflitos de chaves
                 prompt_final = (
                     f"Atue como um analista CNPI, gestor de fundos e especialista em valuation na B3.\n"
                     f"Analise profundamente a ação: {ticker}.\n\n"
@@ -79,11 +78,26 @@ if btn_analisar:
                     "# 15. Conclusão"
                 )
                 
-                response = client.models.generate_content(
-                    model="gemini-3.6-flash",
-                    contents=prompt_final,
-                )
+                # Tentativa de chamada com fallback em caso de indisponibilidade (Erro 503)
+                modelos_disponiveis = ["gemini-3.6-flash", "gemini-2.5-flash", "gemini-1.5-flash"]
+                response = None
                 
+                for modelo in modelos_disponiveis:
+                    try:
+                        response = client.models.generate_content(
+                            model=modelo,
+                            contents=prompt_final,
+                        )
+                        break  # Se funcionar, sai do loop
+                    except Exception as e_model:
+                        if "503" in str(e_model) or "UNAVAILABLE" in str(e_model):
+                            continue  # Tenta o próximo modelo da lista caso o servidor esteja lotado
+                        else:
+                            raise e_model
+                
+                if not response:
+                    raise Exception("Os servidores do Google estão temporariamente sobrecarregados. Por favor, tente novamente em 1 minuto.")
+
                 txt_resposta = response.text
                 
                 # Extração do JSON de métricas
