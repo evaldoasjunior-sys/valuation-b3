@@ -65,48 +65,97 @@ if btn_analisar:
             with st.spinner(f"🔍 Coletando dados fundamentalistas e calculando valuation para {ticker}..."):
                 client = genai.Client(api_key=api_key)
                 
-                # Prompt Otimizado
-                prompt_final = (
-                    f"Atue como um analista CNPI, gestor de fundos e especialista em valuation com foco na Bolsa de Valores brasileira (B3).\n"
-                    f"Analise profundamente a ação {ticker}.\n\n"
-                    "DIRETRIZES FUNDAMENTAIS:\n"
-                    "1. Baseie-se nos dados financeiros públicos mais recentes disponíveis.\n"
-                    "2. Seja objetivo, analítico e evite jargões desnecessários.\n"
-                    "3. Utilize estritamente formatação Markdown (tabelas, negritos e listas) para estruturar a resposta.\n"
-                    "4. Para o Valuation (DCF), explicite claramente as premissas matemáticas utilizadas (WACC, taxa de crescimento, etc.) para evitar distorções.\n\n"
-                    "Estruture o relatório completo seguindo EXATAMENTE os tópicos abaixo:\n\n"
-                    "# 1. Resumo Executivo\n"
-                    "- O que a empresa faz e Setor de atuação\n"
-                    "- Tese central de investimento\n"
-                    "- Principais vantagens competitivas e Principais riscos\n"
-                    "- Recomendação final (Compra Forte, Compra, Manutenção, Venda ou Venda Forte)\n"
-                    "- Nota final (0 a 10)\n\n"
-                    "# 2. Modelo de Negócio\n"
-                    "- Como a empresa monetiza e principais produtos/serviços\n"
-                    "- Principais clientes e Participação de mercado\n"
-                    "- Barreiras de entrada\n"
-                    "- Dependência de variáveis macroeconômicas (commodities, juros, dólar, regulação)\n\n"
-                    "# 3. Qualidade da Empresa\n"
-                    "Avalie Governança corporativa, Histórico da gestão, Alocação de capital e Política de dividendos.\n"
-                    "- Atribua notas (0 a 10) para: Governança, Gestão, Eficiência operacional e Alocação de capital.\n\n"
-                    "# 4. Análise Financeira (Últimos 5 Anos)\n"
-                    "[Apresente uma Tabela Markdown contendo: Receita, EBITDA, Lucro Líquido, Margem EBITDA, Margem Líquida, FCO, FCL, Capex, Dívida Líquida]\n"
-                    "- Explique brevemente as tendências encontradas.\n\n"
-                    "# 5. Indicadores Fundamentalistas\n"
-                    "Apresente e interprete os principais múltiplos (P/L, P/VP, EV/EBITDA, ROE, ROIC, Margens, Div. Yield, Dívida/EBITDA).\n"
-                    "- Compare os indicadores com a média do setor e principais concorrentes.\n\n"
-                    "# 6. Vantagens Competitivas (Moat)\n"
-                    "Avalie a força da Marca, Escala, Custos de troca, Distribuição e Tecnologia. Explique se existe um 'Moat' sustentável.\n\n"
-                    "# 7. Comparação Setorial\n"
-                    "[Apresente uma Tabela Markdown comparando a empresa com 2 ou 3 concorrentes nas métricas: Receita, Margem EBITDA, ROE, P/L e EV/EBITDA]\n"
-                    "- Indique quem é o líder do setor.\n\n"
-                    "# 8. Análise de Endividamento\n"
-                    "Avalie a qualidade da dívida, prazo médio, indexação e capacidade de pagamento.\n"
-                    "- Classifique o Risco de Solidez (Muito Baixo, Baixo, Moderado, Alto, Muito Alto).\n\n"
-                    "# 9. Dividendos\n"
-                    "Analise o histórico, sustentabilidade (Payout), Yield atual e projeção futura.\n"
-                    "- Classifique a qualidade dos dividendos para o longo prazo.\n\n"
-                    "# 10. Mapa de Riscos\n"
-                    "Liste e classifique de 1 a 5 (onde 5 é o mais crítico) os riscos: Macroeconômico, Regulatório, Operacional, Concorrencial e Governança.\n\n"
-                    "# 11. Catalisadores (Triggers)\n"
-                    "Identifique 3 a 5 eventos prováveis que podem destravar valor para a ação no curto/médio
+                # Prompt em bloco único (evita erros de aspas quebradas)
+                prompt_final = f"""Atue como um analista CNPI, gestor de fundos e especialista em valuation com foco na Bolsa de Valores brasileira (B3).
+Analise profundamente a ação {ticker}.
+
+DIRETRIZES FUNDAMENTAIS:
+1. Baseie-se nos dados financeiros públicos mais recentes disponíveis.
+2. Seja objetivo, analítico e evite jargões desnecessários.
+3. Utilize estritamente formatação Markdown (tabelas, negritos e listas) para estruturar a resposta.
+4. Para o Valuation (DCF), explicite claramente as premissas matemáticas utilizadas (WACC, taxa de crescimento, etc.) para evitar distorções.
+
+Estruture o relatório completo seguindo EXATAMENTE os tópicos abaixo:
+
+# 1. Resumo Executivo
+- O que a empresa faz e Setor de atuação
+- Tese central de investimento
+- Principais vantagens competitivas e Principais riscos
+- Recomendação final (Compra Forte, Compra, Manutenção, Venda ou Venda Forte)
+- Nota final (0 a 10)
+
+# 2. Modelo de Negócio
+- Como a empresa monetiza e principais produtos/serviços
+- Principais clientes e Participação de mercado
+- Barreiras de entrada
+- Dependência de variáveis macroeconômicas (commodities, juros, dólar, regulação)
+
+# 3. Qualidade da Empresa
+Avalie Governança corporativa, Histórico da gestão, Alocação de capital e Política de dividendos.
+- Atribua notas (0 a 10) para: Governança, Gestão, Eficiência operacional e Alocação de capital.
+
+# 4. Análise Financeira (Últimos 5 Anos)
+[Apresente uma Tabela Markdown contendo: Receita, EBITDA, Lucro Líquido, Margem EBITDA, Margem Líquida, FCO, FCL, Capex, Dívida Líquida]
+- Explique brevemente as tendências encontradas.
+
+# 5. Indicadores Fundamentalistas
+Apresente e interprete os principais múltiplos (P/L, P/VP, EV/EBITDA, ROE, ROIC, Margens, Div. Yield, Dívida/EBITDA).
+- Compare os indicadores com a média do setor e principais concorrentes.
+
+# 6. Vantagens Competitivas (Moat)
+Avalie a força da Marca, Escala, Custos de troca, Distribuição e Tecnologia. Explique se existe um 'Moat' sustentável.
+
+# 7. Comparação Setorial
+[Apresente uma Tabela Markdown comparando a empresa com 2 ou 3 concorrentes nas métricas: Receita, Margem EBITDA, ROE, P/L e EV/EBITDA]
+- Indique quem é o líder do setor.
+
+# 8. Análise de Endividamento
+Avalie a qualidade da dívida, prazo médio, indexação e capacidade de pagamento.
+- Classifique o Risco de Solidez (Muito Baixo, Baixo, Moderado, Alto, Muito Alto).
+
+# 9. Dividendos
+Analise o histórico, sustentabilidade (Payout), Yield atual e projeção futura.
+- Classifique a qualidade dos dividendos para o longo prazo.
+
+# 10. Mapa de Riscos
+Liste e classifique de 1 a 5 (onde 5 é o mais crítico) os riscos: Macroeconômico, Regulatório, Operacional, Concorrencial e Governança.
+
+# 11. Catalisadores (Triggers)
+Identifique 3 a 5 eventos prováveis que podem destravar valor para a ação no curto/médio prazo e o impacto esperado.
+
+# 12. Valuation e Precificação
+Apresente a modelagem de preço (Múltiplos e Fluxo de Caixa Descontado).
+- Explicite as premissas do DCF (WACC estimado e Crescimento na Perpetuidade - g).
+- Informe as Faixas de Preço Justo: Pessimista, Base e Otimista.
+
+# 13. Perspectivas para o Longo Prazo
+Resuma as estimativas de crescimento e desafios para os próximos 1, 3 e 5 anos.
+
+# 14. Conclusão e Decisão de Investimento
+Responda de forma direta:
+1. A empresa possui vantagens duradouras?
+2. A ação está barata, justa ou cara?
+3. Para qual perfil é adequada? (Dividendos, Valor ou Crescimento)
+4. Preço Teto sugerido para compra.
+
+Finalize em destaque com:
+- RECOMENDAÇÃO FINAL: [Sua Recomendação]
+- CONFIANÇA DA ANÁLISE: [X/10]
+- MARGEM DE SEGURANÇA ESTIMADA: [X%]
+
+---
+INSTRUÇÃO CRÍTICA DE SISTEMA:
+No final absoluto da sua resposta, inclua OBRIGATORIAMENTE um bloco de código JSON puro contendo exatamente as chaves abaixo para integração sistêmica. Não adicione nenhum texto após o JSON.
+
+```json
+{{
+  "nota_final": 8.5,
+  "qualidade": 8.5,
+  "valuation": 9.0,
+  "dividendos": 9.5,
+  "crescimento": 7.5,
+  "risco": 3.0,
+  "preco_justo": 36.00,
+  "potencial_alta_pct": 33.3,
+  "recomendacao": "COMPRA FORTE"
+}}
