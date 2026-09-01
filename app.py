@@ -38,18 +38,19 @@ st.markdown("""
 st.title("📊 Terminal de Valuation & Análise CNPI (B3)")
 st.caption("Automação Fundamentalista de Longo Prazo via Inteligência Artificial")
 
-# Sidebar - Configurações e Modos de Navegação
+# Sidebar - Configurações de API Key
 with st.sidebar:
     st.header("⚙️ Configurações")
-    api_key = st.text_input("Insira sua API Key do Google AI Studio:", type="password")
-    st.markdown("[Obtenha sua API Key gratuita aqui](https://aistudio.google.com/)")
-    st.divider()
     
-    st.header("📌 Modo de Operação")
-    modo = st.radio("Escolha a funcionalidade:", [
-        "🔍 Análise Individual por Ticker", 
-        "⚡ Scanner Ibovespa (Top Blue Chips)"
-    ])
+    # Busca a chave salva nos Secrets do Streamlit Cloud em primeiro lugar
+    api_key_secret = st.secrets.get("GEMINI_API_KEY", "")
+    
+    if api_key_secret:
+        st.success("🔑 API Key detectada automaticamente via Secrets!")
+        api_key = api_key_secret
+    else:
+        api_key = st.text_input("Insira sua API Key do Google AI Studio:", type="password")
+        st.markdown("[Obtenha sua API Key gratuita aqui](https://aistudio.google.com/)")
     
     st.divider()
     st.info("💡 **Dica:** O Scanner analisa as principais empresas do Ibovespa de forma consolidada.")
