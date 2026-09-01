@@ -192,4 +192,174 @@ No final absoluto da sua resposta, inclua OBRIGATORIAMENTE um bloco de código J
 
                     txt_resposta = response.text
                     
-                    padrao_json = r"```json\s*(\{.*?\})\s*
+                    padrao_json = r"```json\s*(\{.*?\})\s*```"
+                    json_match = re.search(padrao_json, txt_resposta, re.DOTALL)
+                    
+                    if json_match:
+                        dados_json = json.loads(json_match.group(1))
+                        
+                        st.subheader(f"📌 Painel do Ativo: {ticker}")
+                        
+                        rec_texto = str(dados_json.get("recomendacao", "N/A")).upper()
+                        if "COMPRA" in rec_texto:
+                            cor_rec = "#1E88E5"
+                        elif "VENDA" in rec_texto:
+                            cor_rec = "#E53935"
+                        else:
+                            cor_rec = "#FB8C00"
+
+                        c1, c2, c3, c4, c5 = st.columns(5)
+                        
+                        with c1:
+                            st.markdown(f"""
+                                <div style="font-size: 0.85rem; color: #666; margin-bottom: 4px;">Recomendação</div>
+                                <div style="font-size: 1.3rem; font-weight: bold; color: {cor_rec}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    {rec_texto}
+                                </div>
+                            """, unsafe_allow_html=True)
+                            
+                        c2.metric("Preço Justo Estimado", f"R$ {dados_json.get('preco_justo', 0):.2f}")
+                        c3.metric("Potencial de Alta", f"+{dados_json.get('potencial_alta_pct', 0)}%")
+                        c4.metric("Nota Final Score", f"{dados_json.get('nota_final', 0)} / 10")
+                        c5.metric("Qualidade Geral", f"{dados_json.get('qualidade', 0)} / 10")
+                        
+                        st.divider()
+
+                        col_grafico, col_resumo = st.columns([1, 1])
+                        
+                        with col_grafico:
+                            st.markdown("### 🕸️ Perfil Fundamentalista (Score 0 a 10)")
+                            df_radar = pd.DataFrame({
+                                'Métrica': ['Qualidade', 'Valuation', 'Dividendos', 'Crescimento', 'Risco (Inverso)'],
+                                'Nota': [
+                                    dados_json.get('qualidade', 0),
+                                    dados_json.get('valuation', 0),
+                                    dados_json.get('dividendos', 0),
+                                    dados_json.get('crescimento', 0),
+                                    10 - dados_json.get('risco', 0)
+                                ]
+                            })
+                            fig = px.line_polar(df_radar, r='Nota', theta='Métrica', line_close=True, range_r=[0, 10])
+                            fig.update_traces(fill='toself', fillcolor='rgba(0, 230, 118, 0.2)', line_color='#00E676')
+                            st.plotly_chart(fig, use_container_width=True)
+                            
+                        with col_resumo:
+                            st.markdown("### 📋 Resumo das Notas")
+                            
+                            mapeamento_nomes = {
+                                "nota_final": "Nota Final",
+                                "qualidade": "Qualidade",
+                                "valuation": "Valuation",
+                                "dividendos": "Dividendos",
+                                "crescimento": "Crescimento",
+                                "risco": "Risco",
+                                "preco_justo": "Preço Justo",
+                                "potencial_alta_pct": "Potencial de Alta",
+                                "recomendacao": "Recomendação"
+                            }
+
+                            dados_formatados = {}
+                            for chave, valor in dados_json.items():
+                                nome_amigavel = mapeamento_nomes.get(chave, chave)
+                                if chave == "preco_justo" and isinstance(valor, (int, float)):
+                                    dados_formatados[nome_amigavel] = f"R$ {valor:.2f}"
+                                elif chave == "potencial_alta_pct" and isinstance(valor, (int, float)):
+                                    dados_formatados[nome_amigavel] = f"{valor:.1f}%"
+                                else:
+                                    dados_formatados[nome_amigavel] = str(valor)
+
+                            df_tabela = pd.DataFrame(list(dados_formatados.items()), columns=["Indicador", "Valor"])
+                            st.dataframe(df_tabela, use_container_width=True, hide_index=True)
+
+                        st.divider()
+
+                    st.subheader("📑 Relatório CNPI Detalhado")
+                    txt_limpo = re.sub(padrao_json, "", txt_resposta, flags=re.DOTALL)
+                    st.markdown(txt_limpo)
+
+            except Exception as e:
+                st.error(f"Erro ao processar o dashboard: {e}")
+
+else:
+    st.subheader("⚡ Scanner Ibovespa - Principais Blue Chips")
+    st.write("Análise consolidada das principais ações de maior peso do Ibovespa gerada por IA.")
+    
+    if st.button("🚀 Executar Scanner de Oportunidades", type="primary"):
+        if not api_key:
+            st.error("⚠️ Por favor, insira sua API Key na barra lateral à esquerda ou configure nos Secrets.")
+        else:
+            try:
+                with st.spinner("Analisando as principais blue chips do Ibovespa em lote..."):
+                    client = genai.Client(api_key=api_key)
+                    
+                    prompt_scanner = """Atue como um analista CNPI sênior e especialista em valuation na B3.
+Analise as seguintes 10 principais blue chips do Ibovespa: PETR4, VALE3, ITUB4, BBDC4, BBAS3, WEGE3, RENT3, JBSS3, SUZB3, ABEV3.
+
+Retorne APENAS um bloco de código JSON puro contendo um array de objetos. Cada objeto deve conter exatamente estas chaves:
+- "ticker": string (ex: "PETR4")
+- "empresa": string (nome da empresa)
+- "setor": string
+- "recomendacao": string ("COMPRA FORTE", "COMPRA", "MANUTENCAO", "VENDA", ou "VENDA FORTE")
+- "nota_final": float (0 a 10)
+- "potencial_alta_pct": float (ex: 25.5)
+
+Não inclua nenhum texto explicativo antes ou depois do JSON. Apenas o bloco json puro.
+```json
+[
+  {
+    "ticker": "PETR4",
+    "empresa": "Petrobras",
+    "setor": "Petróleo e Gás",
+    "recomendacao": "COMPRA",
+    "nota_final": 8.5,
+    "potencial_alta_pct": 22.0
+  }
+]
+```"""
+                    
+                    modelos_disponiveis = ["gemini-3.6-flash", "gemini-2.5-flash", "gemini-1.5-flash"]
+                    response = None
+                    
+                    for modelo in modelos_disponiveis:
+                        try:
+                            response = client.models.generate_content(
+                                model=modelo,
+                                contents=prompt_scanner,
+                            )
+                            break
+                        except Exception:
+                            continue
+                            
+                    if response:
+                        match_arr = re.search(r'```json\s*(\[.*?\])\s*```', response.text, re.DOTALL)
+                        if match_arr:
+                            lista_acoes = json.loads(match_arr.group(1))
+                            df_scanner = pd.DataFrame(lista_acoes)
+                            
+                            df_scanner = df_scanner.rename(columns={
+                                "ticker": "Ticker",
+                                "empresa": "Empresa",
+                                "setor": "Setor",
+                                "recomendacao": "Recomendação",
+                                "nota_final": "Nota Final",
+                                "potencial_alta_pct": "Potencial de Alta (%)"
+                            })
+                            
+                            def color_recommendation(val):
+                                val_upper = str(val).upper()
+                                if "COMPRA" in val_upper:
+                                    return 'color: #1E88E5; font-weight: bold;'
+                                elif "VENDA" in val_upper:
+                                    return 'color: #E53935; font-weight: bold;'
+                                return 'color: #FB8C00; font-weight: bold;'
+                            
+                            df_styled = df_scanner.style.map(color_recommendation, subset=['Recomendação'])
+                            
+                            st.success("Scanner concluído com sucesso!")
+                            st.dataframe(df_styled, use_container_width=True, hide_index=True)
+                        else:
+                            st.error("Erro ao interpretar o formato de resposta da IA.")
+                    else:
+                        st.error("Erro ao conectar com a API do Gemini.")
+            except Exception as e:
+                st.error(f"Erro no scanner: {e}")
