@@ -124,7 +124,7 @@ if btn_analisar:
                     
                     st.divider()
 
-                    # 2. GRÁFICO DE RADAR & TABELA FORMATADA
+                    # 2. GRÁFICO DE RADAR & TABELA FORMATADA EM NEGRITO
                     col_grafico, col_resumo = st.columns([1, 1])
                     
                     with col_grafico:
@@ -146,7 +146,7 @@ if btn_analisar:
                     with col_resumo:
                         st.markdown("### 📋 Resumo das Notas")
                         
-                       mapeamento_nomes = {
+                        mapeamento_nomes = {
                             "nota_final": "**Nota Final**",
                             "qualidade": "**Qualidade**",
                             "valuation": "**Valuation**",
@@ -160,13 +160,13 @@ if btn_analisar:
 
                         dados_formatados = {}
                         for chave, valor in dados_json.items():
-                            nome_amigavel = mapeamento_nomes.get(chave, chave)
+                            nome_amigavel = mapeamento_nomes.get(chave, f"**{chave}**")
                             if chave == "preco_justo" and isinstance(valor, (int, float)):
-                                dados_formatados[nome_amigavel] = f"R$ {valor:.2f}"
+                                dados_formatados[nome_amigavel] = f"**R$ {valor:.2f}**"
                             elif chave == "potencial_alta_pct" and isinstance(valor, (int, float)):
-                                dados_formatados[nome_amigavel] = f"{valor:.1f}%"
+                                dados_formatados[nome_amigavel] = f"**{valor:.1f}%**"
                             else:
-                                dados_formatados[nome_amigavel] = valor
+                                dados_formatados[nome_amigavel] = f"**{valor}**"
 
                         df_tabela = pd.DataFrame(list(dados_formatados.items()), columns=["Indicador", "Valor"])
                         st.dataframe(df_tabela, use_container_width=True, hide_index=True)
