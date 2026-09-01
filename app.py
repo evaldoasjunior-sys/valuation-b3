@@ -16,11 +16,20 @@ st.set_page_config(
 st.title("📊 Terminal de Valuation & Análise CNPI (B3)")
 st.caption("Automação Fundamentalista de Longo Prazo via Inteligência Artificial")
 
-# Sidebar - Configurações
+# Sidebar - Configurações de API Key
 with st.sidebar:
     st.header("⚙️ Configurações")
-    api_key = st.text_input("Insira sua API Key do Google AI Studio:", type="password")
-    st.markdown("[Obtenha sua API Key gratuita aqui](https://aistudio.google.com/)")
+    
+    # Busca a chave salva nos Secrets do Streamlit Cloud em primeiro lugar
+    api_key_secret = st.secrets.get("GEMINI_API_KEY", "")
+    
+    if api_key_secret:
+        st.success("🔑 API Key detectada automaticamente via Secrets!")
+        api_key = api_key_secret
+    else:
+        api_key = st.text_input("Insira sua API Key do Google AI Studio:", type="password")
+        st.markdown("[Obtenha sua API Key gratuita aqui](https://aistudio.google.com/)")
+        
     st.divider()
     st.info("💡 **Dica:** Digite tickers da B3 como BBAS3, ITUB4, WEGE3, PETR4 ou VALE3.")
 
@@ -35,7 +44,7 @@ with col_btn:
 
 if btn_analisar:
     if not api_key:
-        st.error("⚠️ Por favor, insira sua API Key na barra lateral à esquerda.")
+        st.error("⚠️ Por favor, insira sua API Key na barra lateral à esquerda ou configure nos Secrets.")
     elif not ticker:
         st.warning("⚠️ Por favor, informe o ticker do ativo.")
     else:
@@ -78,7 +87,7 @@ if btn_analisar:
                     "# 15. Conclusão"
                 )
                 
-                # Tentativa de chamada com fallback em caso de indisponibilidade (Erro 503)
+                # Sistema de fallback para contornar picos de uso
                 modelos_disponiveis = ["gemini-3.6-flash", "gemini-2.5-flash", "gemini-1.5-flash"]
                 response = None
                 
@@ -88,19 +97,19 @@ if btn_analisar:
                             model=modelo,
                             contents=prompt_final,
                         )
-                        break  # Se funcionar, sai do loop
+                        break
                     except Exception as e_model:
                         if "503" in str(e_model) or "UNAVAILABLE" in str(e_model):
-                            continue  # Tenta o próximo modelo da lista caso o servidor esteja lotado
+                            continue
                         else:
                             raise e_model
                 
                 if not response:
-                    raise Exception("Os servidores do Google estão temporariamente sobrecarregados. Por favor, tente novamente em 1 minuto.")
+                    raise Exception("Servidores sobrecarregados momentaneamente. Tente novamente em alguns segundos.")
 
                 txt_resposta = response.text
                 
-                # Extração do JSON de métricas
+                # Extração das métricas em JSON
                 json_match = re.search(r'```json\s*(\{.*?\})\s*```', txt_resposta, re.DOTALL)
                 
                 if json_match:
@@ -108,7 +117,7 @@ if btn_analisar:
                     
                     st.subheader(f"📌 Painel do Ativo: {ticker}")
                     
-                    # 1. CARDS DE MÉTRICAS
+                    # CARDS DE MÉTRICAS
                     c1, c2, c3, c4, c5 = st.columns(5)
                     c1.metric("Recomendação", dados_json.get("recomendacao", "N/A"))
                     c2.metric("Preço Justo Estimado", f"R$ {dados_json.get('preco_justo', 0):.2f}")
@@ -118,7 +127,7 @@ if btn_analisar:
                     
                     st.divider()
 
-                    # 2. GRÁFICO DE RADAR
+                    # GRÁFICO DE RADAR
                     col_grafico, col_resumo = st.columns([1, 1])
                     
                     with col_grafico:
@@ -145,10 +154,8 @@ if btn_analisar:
 
                     st.divider()
 
-                # 3. RELATÓRIO COMPLETO
+                # RELATÓRIO COMPLETO
                 st.subheader("📑 Relatório CNPI Detalhado")
-                
-                # Remove o JSON para exibir apenas o relatório formatado
                 txt_limpo = re.sub(r'```json\s*(\{.*?\})\s*```', '', txt_resposta, flags=re.DOTALL)
                 st.markdown(txt_limpo)
 
