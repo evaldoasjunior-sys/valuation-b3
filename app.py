@@ -353,7 +353,11 @@ Não inclua nenhum texto explicativo antes ou depois do JSON. Apenas o bloco jso
                                     return 'color: #E53935; font-weight: bold;'
                                 return 'color: #FB8C00; font-weight: bold;'
                             
-                            df_styled = df_scanner.style.map(color_recommendation, subset=['Recomendação'])
+                            # Compatibilidade com versões recentes e antigas do Pandas
+                            if hasattr(df_scanner.style, 'map'):
+                                df_styled = df_scanner.style.map(color_recommendation, subset=['Recomendação'])
+                            else:
+                                df_styled = df_scanner.style.applymap(color_recommendation, subset=['Recomendação'])
                             
                             st.success("Scanner concluído com sucesso!")
                             st.dataframe(df_styled, use_container_width=True, hide_index=True)
