@@ -65,7 +65,7 @@ if btn_analisar:
             with st.spinner(f"🔍 Coletando dados fundamentalistas e calculando valuation para {ticker}..."):
                 client = genai.Client(api_key=api_key)
                 
-                # Novo Prompt Otimizado
+                # Prompt Otimizado
                 prompt_final = (
                     f"Atue como um analista CNPI, gestor de fundos e especialista em valuation com foco na Bolsa de Valores brasileira (B3).\n"
                     f"Analise profundamente a ação {ticker}.\n\n"
@@ -109,60 +109,4 @@ if btn_analisar:
                     "# 10. Mapa de Riscos\n"
                     "Liste e classifique de 1 a 5 (onde 5 é o mais crítico) os riscos: Macroeconômico, Regulatório, Operacional, Concorrencial e Governança.\n\n"
                     "# 11. Catalisadores (Triggers)\n"
-                    "Identifique 3 a 5 eventos prováveis que podem destravar valor para a ação no curto/médio prazo e o impacto esperado.\n\n"
-                    "# 12. Valuation e Precificação\n"
-                    "Apresente a modelagem de preço (Múltiplos e Fluxo de Caixa Descontado).\n"
-                    "- Explicite as premissas do DCF (WACC estimado e Crescimento na Perpetuidade - g).\n"
-                    "- Informe as Faixas de Preço Justo: Pessimista, Base e Otimista.\n\n"
-                    "# 13. Perspectivas para o Longo Prazo\n"
-                    "Resuma as estimativas de crescimento e desafios para os próximos 1, 3 e 5 anos.\n\n"
-                    "# 14. Conclusão e Decisão de Investimento\n"
-                    "Responda de forma direta:\n"
-                    "1. A empresa possui vantagens duradouras?\n"
-                    "2. A ação está barata, justa ou cara?\n"
-                    "3. Para qual perfil é adequada? (Dividendos, Valor ou Crescimento)\n"
-                    "4. Preço Teto sugerido para compra.\n\n"
-                    "Finalize em destaque com:\n"
-                    "- RECOMENDAÇÃO FINAL: [Sua Recomendação]\n"
-                    "- CONFIANÇA DA ANÁLISE: [X/10]\n"
-                    "- MARGEM DE SEGURANÇA ESTIMADA: [X%]\n\n"
-                    "---\n"
-                    "INSTRUÇÃO CRÍTICA DE SISTEMA:\n"
-                    "No final absoluto da sua resposta, inclua OBRIGATORIAMENTE um bloco de código JSON puro contendo exatamente as chaves abaixo para integração sistêmica. Não adicione nenhum texto após o JSON.\n\n"
-                    "```json\n"
-                    "{\n"
-                    '  "nota_final": 8.5,\n'
-                    '  "qualidade": 8.5,\n'
-                    '  "valuation": 9.0,\n'
-                    '  "dividendos": 9.5,\n'
-                    '  "crescimento": 7.5,\n'
-                    '  "risco": 3.0,\n'
-                    '  "preco_justo": 36.00,\n'
-                    '  "potencial_alta_pct": 33.3,\n'
-                    '  "recomendacao": "COMPRA FORTE"\n'
-                    "}\n"
-                    "```\n"
-                )
-                
-                modelos_disponiveis = ["gemini-3.6-flash", "gemini-2.5-flash", "gemini-1.5-flash"]
-                response = None
-                
-                for modelo in modelos_disponiveis:
-                    try:
-                        response = client.models.generate_content(
-                            model=modelo,
-                            contents=prompt_final,
-                        )
-                        break
-                    except Exception as e_model:
-                        if "503" in str(e_model) or "UNAVAILABLE" in str(e_model):
-                            continue
-                        else:
-                            raise e_model
-                
-                if not response:
-                    raise Exception("Servidores sobrecarregados momentaneamente. Tente novamente em alguns segundos.")
-
-                txt_resposta = response.text
-                
-                json_match = re.search(r'```json\s*(\{.*?\})\s*
+                    "Identifique 3 a 5 eventos prováveis que podem destravar valor para a ação no curto/médio
