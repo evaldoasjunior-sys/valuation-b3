@@ -13,28 +13,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Estilização CSS customizada
-st.markdown("""
-<style>
-    .metric-card {
-        background-color: #1E222D;
-        border-radius: 10px;
-        padding: 15px;
-        border: 1px solid #2A2E39;
-        text-align: center;
-    }
-    .metric-value {
-        font-size: 24px;
-        font-weight: bold;
-        color: #00E676;
-    }
-    .metric-label {
-        font-size: 14px;
-        color: #B2B5BE;
-    }
-</style>
-""", unsafe_allow_html=True)
-
 st.title("📊 Terminal de Valuation & Análise CNPI (B3)")
 st.caption("Automação Fundamentalista de Longo Prazo via Inteligência Artificial")
 
@@ -65,22 +43,100 @@ if btn_analisar:
             with st.spinner(f"🔍 Coletando dados fundamentalistas e calculando valuation para {ticker}..."):
                 client = genai.Client(api_key=api_key)
                 
-                # Prompt formatado com f-string limpa
-                prompt_final = f"""
-Atue como um analista CNPI, gestor de fundos e especialista em valuation na B3.
-Analise profundamente a ação: {ticker}.
+                # Prompt construído sem f-string para evitar conflitos de chaves
+                prompt_final = (
+                    f"Atue como um analista CNPI, gestor de fundos e especialista em valuation na B3.\n"
+                    f"Analise profundamente a ação: {ticker}.\n\n"
+                    "No final do relatório, inclua OBRIGATORIAMENTE um bloco de código JSON isolado contendo exatamente esta estrutura para alimentarmos o dashboard gráfico:\n\n"
+                    "```json\n"
+                    "{\n"
+                    '  "nota_final": 8.5,\n'
+                    '  "qualidade": 8.5,\n'
+                    '  "valuation": 9.0,\n'
+                    '  "dividendos": 9.5,\n'
+                    '  "crescimento": 7.5,\n'
+                    '  "risco": 3.0,\n'
+                    '  "preco_justo": 36.00,\n'
+                    '  "potencial_alta_pct": 33.3,\n'
+                    '  "recomendacao": "COMPRA"\n'
+                    "}\n"
+                    "```\n\n"
+                    "Estruture o relatório completo em texto formatado em Markdown seguindo os tópicos:\n"
+                    "# 1. Resumo Executivo\n"
+                    "# 2. Modelo de Negócio\n"
+                    "# 3. Qualidade da Empresa\n"
+                    "# 4. Análise Financeira dos Últimos 5 Anos\n"
+                    "# 5. Indicadores Fundamentalistas\n"
+                    "# 6. Vantagens Competitivas (Moat)\n"
+                    "# 7. Comparação com Concorrentes\n"
+                    "# 8. Análise de Endividamento\n"
+                    "# 9. Dividendos\n"
+                    "# 10. Riscos\n"
+                    "# 11. Catalisadores\n"
+                    "# 12. Valuation\n"
+                    "# 13. Perspectivas para 1, 3 e 5 anos\n"
+                    "# 14. Score do Investidor\n"
+                    "# 15. Conclusão"
+                )
+                
+                response = client.models.generate_content(
+                    model="gemini-3.6-flash",
+                    contents=prompt_final,
+                )
+                
+                txt_resposta = response.text
+                
+                # Extração do JSON de métricas
+                json_match = re.search(r'```json\s*(\{.*?\})\s*```', txt_resposta, re.DOTALL)
+                
+                if json_match:
+                    dados_json = json.loads(json_match.group(1))
+                    
+                    st.subheader(f"📌 Painel do Ativo: {ticker}")
+                    
+                    # 1. CARDS DE MÉTRICAS
+                    c1, c2, c3, c4, c5 = st.columns(5)
+                    c1.metric("Recomendação", dados_json.get("recomendacao", "N/A"))
+                    c2.metric("Preço Justo Estimado", f"R$ {dados_json.get('preco_justo', 0):.2f}")
+                    c3.metric("Potencial de Alta", f"+{dados_json.get('potencial_alta_pct', 0)}%")
+                    c4.metric("Nota Final Score", f"{dados_json.get('nota_final', 0)} / 10")
+                    c5.metric("Qualidade Geral", f"{dados_json.get('qualidade', 0)} / 10")
+                    
+                    st.divider()
 
-No final do relatório, inclua OBRIGATORIAMENTE um bloco de código JSON isolado contendo exatamente esta estrutura para alimentarmos o dashboard gráfico:
+                    # 2. GRÁFICO DE RADAR
+                    col_grafico, col_resumo = st.columns([1, 1])
+                    
+                    with col_grafico:
+                        st.markdown("### 🕸️ Perfil Fundamentalista (Score 0 a 10)")
+                        df_radar = pd.DataFrame({
+                            'Métrica': ['Qualidade', 'Valuation', 'Dividendos', 'Crescimento', 'Risco (Inverso)'],
+                            'Nota': [
+                                dados_json.get('qualidade', 0),
+                                dados_json.get('valuation', 0),
+                                dados_json.get('dividendos', 0),
+                                dados_json.get('crescimento', 0),
+                                10 - dados_json.get('risco', 0)
+                            ]
+                        })
+                        fig = px.line_polar(df_radar, r='Nota', theta='Métrica', line_close=True, range_r=[0, 10])
+                        fig.update_traces(fill='toself', fillcolor='rgba(0, 230, 118, 0.2)', line_color='#00E676')
+                        st.plotly_chart(fig, use_container_width=True)
+                        
+                    with col_resumo:
+                        st.markdown("### 📋 Resumo das Notas")
+                        df_tabela = pd.DataFrame([dados_json]).T
+                        df_tabela.columns = ["Valor"]
+                        st.dataframe(df_tabela, use_container_width=True)
 
-```json
-{{
-  "nota_final": 8.5,
-  "qualidade": 8.5,
-  "valuation": 9.0,
-  "dividendos": 9.5,
-  "crescimento": 7.5,
-  "risco": 3.0,
-  "preco_justo": 36.00,
-  "potencial_alta_pct": 33.3,
-  "recomendacao": "COMPRA"
-}}
+                    st.divider()
+
+                # 3. RELATÓRIO COMPLETO
+                st.subheader("📑 Relatório CNPI Detalhado")
+                
+                # Remove o JSON para exibir apenas o relatório formatado
+                txt_limpo = re.sub(r'```json\s*(\{.*?\})\s*```', '', txt_resposta, flags=re.DOTALL)
+                st.markdown(txt_limpo)
+
+        except Exception as e:
+            st.error(f"Erro ao processar o dashboard: {e}")
