@@ -63,7 +63,7 @@ if st.button("Gerar Análise Completa", type="primary"):
                 # Conecta à API oficial do Gemini
                 client = genai.Client(api_key=api_key)
                 
-                # Executa a geração do relatório com o modelo atualizado
+                # Executa a geração do relatório com o modelo atualizado gemini-2.5-flash
                 prompt_final = PROMPT_BASE.format(TICKER=ticker)
                 response = client.models.generate_content(
                     model="gemini-2.5-flash",
